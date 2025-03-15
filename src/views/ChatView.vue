@@ -12,7 +12,15 @@
     </div>
 
     <div class="chat-content">
-      <el-empty description="开始新的对话" />
+      <template v-if="chatMessages.length > 0">
+        <div class="message-list">
+          <div v-for="(msg, index) in chatMessages" :key="index" 
+               :class="['message', msg.type === 'user' ? 'message-user' : 'message-assistant']">
+            <div class="message-content">{{ msg.content }}</div>
+          </div>
+        </div>
+      </template>
+      <el-empty v-else description="开始新的对话" />
     </div>
 
     <div class="chat-input">
@@ -22,8 +30,15 @@
         :rows="3"
         placeholder="输入消息..."
         resize="none"
+        @keyup.enter.exact="handleSend"
       />
-      <el-button type="primary" :icon="Message" class="send-button">发送</el-button>
+      <el-button 
+        type="primary" 
+        :icon="Message" 
+        class="send-button"
+        :loading="loading"
+        @click="handleSend"
+      >发送</el-button>
     </div>
   </div>
 </template>
@@ -32,12 +47,48 @@
 import { ref } from 'vue'
 import { useRouter } from 'vue-router'
 import { ArrowLeft, Message } from '@element-plus/icons-vue'
+import { ElMessage } from 'element-plus'
+import { sendChatMessage } from '../api/chat'
 
 const router = useRouter()
 const inputMessage = ref('')
+const chatMessages = ref([])
+const loading = ref(false)
 
 const goBack = () => {
   router.back()
+}
+
+const handleSend = async () => {
+  if (!inputMessage.value.trim()) {
+    ElMessage.warning('请输入消息内容')
+    return
+  }
+
+  const userMessage = inputMessage.value.trim()
+  // 添加用户消息到列表
+  chatMessages.value.push({
+    type: 'user',
+    content: userMessage
+  })
+
+  // 清空输入框
+  inputMessage.value = ''
+
+  try {
+    loading.value = true
+    // 调用API发送消息
+    const response = await sendChatMessage(userMessage)
+    // 添加助手回复到列表
+    chatMessages.value.push({
+      type: 'assistant',
+      content: response.data
+    })
+  } catch (error) {
+    ElMessage.error('发送消息失败，请重试')
+  } finally {
+    loading.value = false
+  }
 }
 </script>
 
@@ -70,9 +121,38 @@ const goBack = () => {
   flex: 1;
   padding: 24px;
   overflow-y: auto;
+}
+
+.message-list {
   display: flex;
-  align-items: center;
-  justify-content: center;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.message {
+  display: flex;
+  margin-bottom: 12px;
+}
+
+.message-content {
+  max-width: 80%;
+  padding: 12px 16px;
+  border-radius: 8px;
+  word-break: break-word;
+}
+
+.message-user {
+  justify-content: flex-end;
+}
+
+.message-user .message-content {
+  background-color: #409EFF;
+  color: white;
+}
+
+.message-assistant .message-content {
+  background-color: #f4f4f5;
+  color: #333;
 }
 
 .chat-input {

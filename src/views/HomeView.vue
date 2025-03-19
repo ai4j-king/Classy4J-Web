@@ -1,15 +1,15 @@
 <template>
   <div class="home">
     <div class="section">
-      <h2 class="section-title">主页-创建应用</h2>
+      <h2 class="section-title">创建应用</h2>
       <div class="card-list">
-        <el-card class="action-card" shadow="hover">
+        <el-card class="action-card" shadow="hover" @click="showCreateDialog">
           <div class="card-content">
             <el-icon class="icon"><Plus /></el-icon>
             <span>创建空白应用</span>
           </div>
         </el-card>
-        <el-card class="action-card" shadow="hover">
+        <el-card class="action-card" shadow="hover" @click="showTemplateDialog">
           <div class="card-content">
             <el-icon class="icon"><Upload /></el-icon>
             <span>从历史模板创建</span>
@@ -34,24 +34,156 @@
               <h3>知识库 + 智能机器人</h3>
               <p>CHATFLOW</p>
             </div>
+            <el-dropdown trigger="click" class="more-actions" @click.stop>
+              <el-button type="text" class="more-btn">
+                <el-icon><More /></el-icon>
+              </el-button>
+              <template #dropdown>
+                <el-dropdown-menu>
+                  <el-dropdown-item @click="handleEditInfo">
+                    <el-icon><Edit /></el-icon>
+                    <span>编辑信息</span>
+                  </el-dropdown-item>
+                  <el-dropdown-item @click="handleCopy">
+                    <el-icon><Document /></el-icon>
+                    <span>复制</span>
+                  </el-dropdown-item>
+                  <el-dropdown-item @click="handleExportDSL">
+                    <el-icon><Document /></el-icon>
+                    <span>导出 DSL</span>
+                  </el-dropdown-item>
+                  <el-dropdown-item @click="handleOpenInExplorer">
+                    <el-icon><Document /></el-icon>
+                    <span>在"探索"中打开</span>
+                  </el-dropdown-item>
+                  <el-dropdown-item divided @click="handleDelete" class="danger">
+                    <el-icon><Delete /></el-icon>
+                    <span>删除</span>
+                  </el-dropdown-item>
+                </el-dropdown-menu>
+              </template>
+            </el-dropdown>
           </div>
         </el-card>
-        <el-card class="app-card" shadow="hover">
+        <el-card class="app-card" shadow="hover" @click="router.push('/chat')">
           <div class="app-info">
             <el-avatar :size="40" src="https://avatars.githubusercontent.com/u/2?v=4" />
             <div class="app-details">
               <h3>编程助手</h3>
               <p>智能助手</p>
             </div>
+            <el-dropdown trigger="click" class="more-actions" @click.stop>
+              <el-button type="text" class="more-btn">
+                <el-icon><More /></el-icon>
+              </el-button>
+              <template #dropdown>
+                <el-dropdown-menu>
+                  <el-dropdown-item @click="handleEditInfo">
+                    <el-icon><Edit /></el-icon>
+                    <span>编辑信息</span>
+                  </el-dropdown-item>
+                  <el-dropdown-item @click="handleCopy">
+                    <el-icon><Document /></el-icon>
+                    <span>复制</span>
+                  </el-dropdown-item>
+                  <el-dropdown-item @click="handleExportDSL">
+                    <el-icon><Document /></el-icon>
+                    <span>导出 DSL</span>
+                  </el-dropdown-item>
+                  <el-dropdown-item @click="handleOpenInExplorer">
+                    <el-icon><Document /></el-icon>
+                    <span>在"探索"中打开</span>
+                  </el-dropdown-item>
+                  <el-dropdown-item divided @click="handleDelete" class="danger">
+                    <el-icon><Delete /></el-icon>
+                    <span>删除</span>
+                  </el-dropdown-item>
+                </el-dropdown-menu>
+              </template>
+            </el-dropdown>
           </div>
         </el-card>
       </div>
     </div>
+
+    <!-- 创建应用弹窗 -->
+    <CreateAppDialog
+      v-model:visible="createDialogVisible"
+      @create="handleCreateApp"
+    />
+
+    <!-- 模板选择弹窗 -->
+    <TemplateDialog
+      v-model:visible="templateDialogVisible"
+      @create="handleCreateFromTemplate"
+    />
   </div>
 </template>
 
 <script setup>
-import { Plus, Upload, Document } from '@element-plus/icons-vue'
+import { ref } from 'vue'
+import { useRouter } from 'vue-router'
+import {
+  Plus,
+  Upload,
+  Document,
+  More,
+  Edit,
+  Delete
+} from '@element-plus/icons-vue'
+import CreateAppDialog from '../components/CreateAppDialog.vue'
+import TemplateDialog from '../components/TemplateDialog.vue'
+import { ElMessage } from 'element-plus'
+
+const router = useRouter()
+const createDialogVisible = ref(false)
+const templateDialogVisible = ref(false)
+
+const showCreateDialog = () => {
+  createDialogVisible.value = true
+}
+
+const showTemplateDialog = () => {
+  templateDialogVisible.value = true
+}
+
+const handleCreateApp = (appData) => {
+  console.log('创建应用:', appData)
+  ElMessage.success('应用创建成功')
+  // TODO: 处理应用创建逻辑
+}
+
+const handleCreateFromTemplate = (template) => {
+  console.log('从模板创建:', template)
+  ElMessage.success('应用创建成功')
+  // TODO: 处理从模板创建的逻辑
+}
+
+// 处理更多操作
+const handleEditInfo = () => {
+  // 实现编辑信息逻辑
+  console.log('编辑应用信息')
+}
+
+const handleCopy = () => {
+  // 实现复制逻辑
+  console.log('复制应用')
+}
+
+const handleExportDSL = () => {
+  // 实现导出 DSL 逻辑
+  console.log('导出应用 DSL')
+}
+
+const handleOpenInExplorer = () => {
+  // 实现在探索中打开逻辑
+  console.log('在探索中打开应用')
+}
+
+const handleDelete = () => {
+  // 实现删除逻辑
+  console.log('删除应用')
+}
 </script>
 
 <style scoped>
@@ -95,6 +227,7 @@ import { Plus, Upload, Document } from '@element-plus/icons-vue'
 
 .app-card {
   cursor: pointer;
+  position: relative;
 }
 
 .app-info {
@@ -114,5 +247,40 @@ import { Plus, Upload, Document } from '@element-plus/icons-vue'
   margin: 4px 0 0;
   font-size: 12px;
   color: #666;
+}
+
+.more-actions {
+  position: absolute;
+  right: 8px;
+  top: 50%;
+  transform: translateY(-50%);
+}
+
+.more-btn {
+  padding: 8px;
+  color: #909399;
+  
+  &:hover {
+    color: #409eff;
+  }
+}
+
+:deep(.el-dropdown-menu__item) {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 16px;
+  
+  .el-icon {
+    margin-right: 4px;
+  }
+}
+
+:deep(.el-dropdown-menu__item.danger) {
+  color: #f56c6c;
+  
+  &:hover {
+    background-color: #fef0f0;
+  }
 }
 </style> 

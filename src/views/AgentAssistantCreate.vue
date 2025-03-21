@@ -4,12 +4,12 @@
     <div class="sidebar">
       <div class="nav-items">
         <div class="nav-item active">
-          <el-icon><ChatLineRound /></el-icon>
-          <span>聊天助手</span>
-        </div>
-        <div class="nav-item">
           <el-icon><Operation /></el-icon>
           <span>编排</span>
+        </div>
+        <div class="nav-item">
+          <el-icon><ChatLineRound /></el-icon>
+          <span>API</span>
         </div>
         <div class="nav-item">
           <el-icon><Document /></el-icon>
@@ -162,8 +162,126 @@
                   <el-icon><Plus /></el-icon>添加
                 </el-button>
               </div>
+            </div>
+
+            <div class="tool-item">
+              <div class="tool-header">
+                <span>工具</span>
+                <div class="tool-header-right">
+                  <span class="tool-count">0/0启用  |  </span>
+                  <el-popover
+                    v-model:visible="showToolTypes"
+                    placement="bottom-start"
+                    :width="360"
+                    trigger="click"
+                    popper-class="tool-types-popover"
+                  >
+                    <template #reference>
+                      <el-button link type="primary">
+                        <el-icon><Plus /></el-icon>添加
+                      </el-button>
+                    </template>
+                    
+                    <div class="tool-types-menu">
+                      <div class="tool-types-header">
+                        <el-input
+                          v-model="toolSearchQuery"
+                          placeholder="搜索工具..."
+                        >
+                          <template #prefix>
+                            <el-icon><Search /></el-icon>
+                          </template>
+                        </el-input>
+                      </div>
+                      <div class="tool-types-content">
+                        <div class="tool-category">
+                          <div class="category-header">
+                            <div class="category-filters">
+                              <el-tag
+                                v-for="filter in filters"
+                                :key="filter.value"
+                                :class="{ active: filter.active }"
+                                @click="toggleFilter(filter)"
+                              >
+                                {{ filter.label }}
+                              </el-tag>
+                              <el-button 
+                                class="add-filter-btn" 
+                                circle
+                                @click.stop="handleAddTools"
+                              >
+                                <el-icon><Plus /></el-icon>
+                              </el-button>
+                            </div>
+                          </div>
+                          <div class="tool-list">
+                            <div 
+                              v-for="tool in filteredTools" 
+                              :key="tool.name"
+                              class="tool-group"
+                            >
+                              <div class="tool-group-header" @click="toggleToolExpand(tool)">
+                                <div class="tool-basic-info">
+                                  <div class="tool-item-icon">
+                                    <el-icon><component :is="tool.icon" /></el-icon>
+                                  </div>
+                                  <div class="tool-item-name">{{ tool.name }}</div>
+                                </div>
+                                <div class="tool-item-action">
+                                  <el-icon :class="{ 'is-expanded': tool.expanded }">
+                                    <ArrowDown />
+                                  </el-icon>
+                                </div>
+                              </div>
+                              <div 
+                                v-show="tool.expanded"
+                                class="tool-group-items"
+                              >
+                                <div 
+                                  v-for="subTool in tool.subTools" 
+                                  :key="subTool.name"
+                                  class="sub-tool-item"
+                                  :class="{ 'is-added': isToolAdded(subTool) }"
+                                  @click="handleAddTool(subTool)"
+                                >
+                                  <span class="sub-tool-name">{{ subTool.name }}</span>
+                                  <span class="sub-tool-action">
+                                    {{ isToolAdded(subTool) ? '已添加' : '添加' }}
+                                  </span>
+                                </div>
+                              </div>
+                            </div>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                  </el-popover>
+                </div>
+              </div>
               <div class="tool-content">
-                <p class="placeholder">点击添加元数据过滤</p>
+                <template v-if="selectedTools.length === 0">
+                  <p class="placeholder">点击添加工具</p>
+                </template>
+                <template v-else>
+                  <div class="selected-tools-list">
+                    <div 
+                      v-for="tool in selectedTools" 
+                      :key="tool.type"
+                      class="selected-tool-box"
+                    >
+                      <div class="selected-tool-header">
+                        <span class="selected-tool-name">{{ tool.name }}</span>
+                        <el-button 
+                          type="danger" 
+                          link 
+                          @click="removeTool(tool)"
+                        >
+                          <el-icon><Delete /></el-icon>
+                        </el-button>
+                      </div>
+                    </div>
+                  </div>
+                </template>
               </div>
             </div>
           </div>
@@ -424,6 +542,12 @@
       :model-icon="getCurrentModelIcon()"
       @generate="handlePromptGenerated"
     />
+
+    <!-- 自定义工具对话框 -->
+    <CustomToolsDialog
+      v-model:visible="showCustomToolsDialog"
+      @save="handleCustomToolSave"
+    />
   </div>
 </template>
 
@@ -446,11 +570,18 @@ import {
   Tickets,
   List,
   Select,
-  DataLine
+  DataLine,
+  Search,
+  Headset,
+  Monitor,
+  Timer,
+  Download,
+  Delete
 } from '@element-plus/icons-vue'
 import PromptGenerator from '@/components/PromptGenerator.vue'
 import { ElMessage } from 'element-plus'
 import { sendChatMessage } from '@/api/chatAssistant'
+import CustomToolsDialog from '@/components/CustomToolsDialog.vue'
 
 // 状态变量
 const prompt = ref('')
@@ -459,6 +590,10 @@ const showModelSelector = ref(false)
 const showPromptGenerator = ref(false)
 const generatorPrompt = ref('')
 const selectedExample = ref(null)
+const showToolTypes = ref(false)
+const toolSearchQuery = ref('')
+const selectedTools = ref([])
+const showCustomToolsDialog = ref(false)
 
 // 模型列表
 const models = [
@@ -578,6 +713,145 @@ const showVariableTypes = ref(false)
 // 添加聊天消息列表
 const chatMessages = ref([])
 
+// 过滤器数据
+const filters = ref([
+  { label: '全部', value: 'all', active: true },
+  { label: '插件', value: 'plugin', active: false },
+  { label: '代码', value: 'code', active: false },
+  { label: '数据库', value: 'database', active: false },
+  { label: 'API', value: 'api', active: false }
+])
+
+// 工具列表数据
+const tools = ref([
+  {
+    name: 'Audio',
+    icon: 'Headset',
+    category: ['plugin'],
+    expanded: false,
+    subTools: [
+      {
+        name: 'Speech To Text',
+        type: 'audio_stt'
+      },
+      {
+        name: 'Text To Speech',
+        type: 'audio_tts'
+      }
+    ]
+  },
+  {
+    name: '代码解释器',
+    icon: 'Monitor',
+    category: ['code'],
+    expanded: false,
+    subTools: [
+      {
+        name: 'Python Interpreter',
+        type: 'code_python'
+      },
+      {
+        name: 'JavaScript Interpreter',
+        type: 'code_javascript'
+      }
+    ]
+  },
+  {
+    name: '时间',
+    icon: 'Timer',
+    category: ['plugin'],
+    expanded: false,
+    subTools: [
+      {
+        name: 'Time Converter',
+        type: 'time_convert'
+      },
+      {
+        name: 'Time Zone',
+        type: 'time_zone'
+      }
+    ]
+  },
+  {
+    name: '网页抓取',
+    icon: 'Download',
+    category: ['api'],
+    expanded: false,
+    subTools: [
+      {
+        name: 'Web Scraper',
+        type: 'web_scrape'
+      },
+      {
+        name: 'API Caller',
+        type: 'web_api'
+      }
+    ]
+  }
+])
+
+// 切换过滤器状态
+const toggleFilter = (filter) => {
+  if (filter.value === 'all') {
+    // 点击全部时，取消其他所有过滤器
+    filters.value.forEach(f => {
+      f.active = f.value === 'all'
+    })
+  } else {
+    // 点击其他过滤器时，取消"全部"选项
+    const allFilter = filters.value.find(f => f.value === 'all')
+    if (allFilter) {
+      allFilter.active = false
+    }
+    filter.active = !filter.active
+    
+    // 如果没有任何过滤器被选中，自动选中"全部"
+    if (!filters.value.some(f => f.active && f.value !== 'all')) {
+      allFilter.active = true
+    }
+  }
+}
+
+// 切换工具展开状态
+const toggleToolExpand = (tool) => {
+  tool.expanded = !tool.expanded
+}
+
+// 处理添加工具
+const handleAddTool = (subTool) => {
+  // 检查工具是否已经添加
+  if (!selectedTools.value.find(t => t.type === subTool.type)) {
+    selectedTools.value.push(subTool)
+  }
+}
+
+// 检查工具是否已添加的方法
+const isToolAdded = (subTool) => {
+  return selectedTools.value.some(t => t.type === subTool.type)
+}
+
+// 过滤工具列表
+const filteredTools = computed(() => {
+  let result = tools.value
+
+  // 应用搜索过滤
+  if (toolSearchQuery.value) {
+    result = result.filter(tool => 
+      tool.name.toLowerCase().includes(toolSearchQuery.value.toLowerCase())
+    )
+  }
+
+  // 应用标签过滤
+  const activeFilters = filters.value.filter(f => f.active && f.value !== 'all').map(f => f.value)
+  if (activeFilters.length > 0) {
+    result = result.filter(tool => 
+      tool.category.some(cat => activeFilters.includes(cat))
+    )
+  }
+
+  return result
+})
+
 // 方法
 const handlePublish = () => {
   // 实现发布逻辑
@@ -668,6 +942,25 @@ const handlePublishCommand = (command) => {
 const handlePublishUpdate = () => {
   console.log('发布更新')
 }
+
+// 修改 handleAddTools 方法
+const handleAddTools = () => {
+  showCustomToolsDialog.value = true
+}
+
+// 添加处理自定义工具保存的方法
+const handleCustomToolSave = (toolData) => {
+  console.log('保存自定义工具:', toolData)
+  // TODO: 处理保存自定义工具的逻辑
+}
+
+// 修改删除工具的方法
+const removeTool = (tool) => {
+  const index = selectedTools.value.findIndex(t => t.type === tool.type)
+  if (index !== -1) {
+    selectedTools.value.splice(index, 1)
+  }
+}
 </script>
 
 <style scoped>
@@ -678,7 +971,7 @@ const handlePublishUpdate = () => {
 }
 
 .sidebar {
-  width: 15%;
+  width: 10%;
   background-color: #fff;
   border-right: 1px solid #e4e7ed;
   padding: 20px 0;
@@ -826,18 +1119,30 @@ const handlePublishUpdate = () => {
   margin-bottom: 12px;
 }
 
-.tool-content {
-  min-height: 80px;
+.tool-header-right {
   display: flex;
   align-items: center;
-  justify-content: center;
-  border: 1px dashed #dcdfe6;
-  border-radius: 4px;
+  gap: 8px;
 }
 
-.placeholder {
+.tool-count {
   color: #909399;
-  font-size: 14px;
+  font-size: 12px;
+}
+
+.tool-content {
+  min-height: 50px;
+  border: 1px dashed #dcdfe6;
+  border-radius: 4px;
+  
+  .placeholder {
+    height: 50px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: #909399;
+    font-size: 14px;
+  }
 }
 
 .preview-area {
@@ -1247,6 +1552,283 @@ const handlePublishUpdate = () => {
     .el-icon {
       font-size: 16px;
     }
+  }
+}
+
+.tool-types-menu {
+  display: flex;
+  flex-direction: column;
+  height: 400px;
+}
+
+.tool-types-header {
+  padding: 12px;
+}
+
+.tool-types-content {
+  flex: 1;
+  overflow-y: auto;
+  padding: 16px;
+  padding-top:2px;
+}
+
+.tool-category {
+  margin-bottom: 24px;
+}
+
+.category-title {
+  font-size: 14px;
+  font-weight: 500;
+  margin-bottom: 12px;
+  color: #606266;
+}
+
+.tool-list {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  padding-top:5px;
+}
+
+.tool-group {
+  border: 1px solid #e4e7ed;
+  border-radius: 4px;
+  overflow: hidden;
+}
+
+.tool-group-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 12px;
+  cursor: pointer;
+  background-color: #fff;
+  
+  &:hover {
+    background-color: #f5f7fa;
+  }
+}
+
+.tool-basic-info {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.tool-group-items {
+  border-top: 1px solid #e4e7ed;
+  background-color: #f5f7fa;
+}
+
+.sub-tool-item {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 10px 12px;
+  cursor: pointer;
+  transition: all 0.3s;
+  
+  &:hover {
+    background-color: #ecf5ff;
+  }
+
+  &:not(:last-child) {
+    border-bottom: 1px solid #e4e7ed;
+  }
+
+  &.is-added {
+    background-color: #f5f7fa;
+    cursor: not-allowed;
+    opacity: 0.8;
+  }
+}
+
+.sub-tool-name {
+  font-size: 12px;
+  color: #303133;
+}
+
+.sub-tool-action {
+  font-size: 12px;
+  color: #409eff;
+}
+
+.sub-tool-item.is-added .sub-tool-action {
+  color: #909399;
+}
+
+.category-filters {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+:deep(.el-tag) {
+  cursor: pointer;
+  background-color: #f4f4f5;
+  border-color: #e9e9eb;
+  color: #909399;
+  
+  &:hover {
+    background-color: #ecf5ff;
+    border-color: #d9ecff;
+    color: #409eff;
+  }
+  
+  &.active {
+    background-color: #ecf5ff;
+    border-color: #d9ecff;
+    color: #409eff;
+  }
+}
+
+.tool-item-action {
+  padding-left: 12px;
+  
+  .el-icon {
+    font-size: 16px;
+    color: #909399;
+    transition: transform 0.3s;
+    
+    &.is-expanded {
+      transform: rotate(180deg);
+    }
+  }
+}
+
+.tool-item-detail {
+  background-color: #fff;
+  border-top: 1px solid #e4e7ed;
+  padding: 20px;
+}
+
+.detail-content {
+  color: #606266;
+  font-size: 14px;
+  line-height: 1.5;
+  margin-bottom: 16px;
+}
+
+.detail-header {
+  margin-bottom: 24px;
+}
+
+.detail-title {
+  font-size: 16px;
+  font-weight: 500;
+  color: #303133;
+  margin-bottom: 8px;
+}
+
+.detail-subtitle {
+  font-size: 14px;
+  color: #606266;
+}
+
+.detail-section {
+  margin-bottom: 24px;
+
+  &:last-child {
+    margin-bottom: 0;
+  }
+}
+
+.section-title {
+  font-size: 14px;
+  font-weight: 500;
+  color: #303133;
+  margin-bottom: 12px;
+}
+
+.section-content {
+  font-size: 14px;
+  color: #606266;
+  line-height: 1.6;
+}
+
+.params-list {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.param-item {
+  display: flex;
+  align-items: flex-start;
+  gap: 16px;
+  padding: 12px;
+  background-color: #f5f7fa;
+  border-radius: 4px;
+}
+
+.param-name {
+  width: 120px;
+  font-size: 14px;
+  font-weight: 500;
+  color: #303133;
+}
+
+.param-desc {
+  flex: 1;
+  font-size: 13px;
+  color: #606266;
+  margin-right: 16px;
+}
+
+.param-input {
+  width: 200px;
+}
+
+.detail-footer {
+  margin-top: 24px;
+  padding-top: 16px;
+  border-top: 1px solid #e4e7ed;
+  display: flex;
+  justify-content: flex-end;
+}
+
+.selected-tools-list {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+  padding: 12px;
+}
+
+.selected-tool-box {
+  width: 200px;
+  border: 1px solid #e4e7ed;
+  border-radius: 4px;
+  background-color: #fff;
+  transition: all 0.3s;
+  
+  &:hover {
+    border-color: #409eff;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+  }
+}
+
+.selected-tool-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 12px;
+}
+
+.selected-tool-name {
+  font-size: 14px;
+  color: #303133;
+  font-weight: 500;
+}
+
+.add-filter-btn {
+  width: 24px;
+  height: 24px;
+  padding: 0;
+  font-size: 12px;
+  
+  :deep(.el-icon) {
+    font-size: 12px;
   }
 }
 </style> 

@@ -388,7 +388,8 @@
 </template>
 
 <script setup>
-import { ref, reactive, computed } from 'vue'
+import { ref, reactive, computed, onMounted } from 'vue'
+import { useRoute } from 'vue-router'
 import {
   ArrowRight,
   ArrowDown,
@@ -414,6 +415,37 @@ import {
 import PromptGenerator from '@/components/PromptGenerator.vue'
 import { ElMessage } from 'element-plus'
 import { sendChatMessage } from '@/api/chatAssistant'
+import { updateAppConfig, updateAppStatus, getAppConfig } from '@/api/apps'
+
+// 获取路由参数
+const route = useRoute()
+// 应用ID
+const appId = ref(route.params.id)
+
+// 加载应用配置
+const loadAppConfig = async () => {
+  try {
+    const { data } = await getAppConfig(appId.value)
+    prompt.value = data.prompt || ''
+    selectedModel.value = data.model || 'gpt-3.5-turbo-0125'
+    
+    // 加载参数配置
+    if (data.params) {
+      Object.keys(data.params).forEach(key => {
+        if (params[key]) {
+          params[key] = { ...params[key], ...data.params[key] }
+        }
+      })
+    }
+  } catch (error) {
+    console.error('加载应用配置失败:', error)
+    ElMessage.error('加载应用配置失败，请重试')
+  }
+}
+
+onMounted(() => {
+  loadAppConfig()
+})
 
 // 状态变量
 const prompt = ref('')
@@ -542,8 +574,25 @@ const showVariableTypes = ref(false)
 const chatMessages = ref([])
 
 // 方法
-const handlePublish = () => {
-  // 实现发布逻辑
+const handlePublish = async () => {
+  try {
+    // 更新应用配置
+    await updateAppConfig(appId, {
+      prompt: prompt.value,
+      model: selectedModel.value,
+      params: params
+    })
+
+    // 更新应用状态为已发布
+    await updateAppStatus(appId, {
+      status: 'PUBLISHED'
+    })
+
+    ElMessage.success('发布成功')
+  } catch (error) {
+    console.error('发布失败:', error)
+    ElMessage.error('发布失败，请重试')
+  }
 }
 
 const handleGenerate = () => {
@@ -1117,4 +1166,4 @@ const handleAddVariable = (type) => {
     border-bottom: 1px solid #e4e7ed;
   }
 }
-</style> 
+</style>

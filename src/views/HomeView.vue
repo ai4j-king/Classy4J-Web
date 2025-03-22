@@ -27,50 +27,12 @@
     <div class="section">
       <h2 class="section-title">最近使用</h2>
       <div class="card-list">
-        <el-card class="app-card" shadow="hover">
+        <el-card v-for="app in appList" :key="app.id" class="app-card" shadow="hover" @click="router.push(`/apps/${app.id}`)">
           <div class="app-info">
-            <el-avatar :size="40" src="https://avatars.githubusercontent.com/u/1?v=4" />
+            <el-avatar :size="40" :src="app.avatar || 'https://avatars.githubusercontent.com/u/1?v=4'" />
             <div class="app-details">
-              <h3>知识库 + 智能机器人</h3>
-              <p>CHATFLOW</p>
-            </div>
-            <el-dropdown trigger="click" class="more-actions" @click.stop>
-              <el-button type="text" class="more-btn">
-                <el-icon><More /></el-icon>
-              </el-button>
-              <template #dropdown>
-                <el-dropdown-menu>
-                  <el-dropdown-item @click="handleEditInfo">
-                    <el-icon><Edit /></el-icon>
-                    <span>编辑信息</span>
-                  </el-dropdown-item>
-                  <el-dropdown-item @click="handleCopy">
-                    <el-icon><Document /></el-icon>
-                    <span>复制</span>
-                  </el-dropdown-item>
-                  <el-dropdown-item @click="handleExportDSL">
-                    <el-icon><Document /></el-icon>
-                    <span>导出 DSL</span>
-                  </el-dropdown-item>
-                  <el-dropdown-item @click="handleOpenInExplorer">
-                    <el-icon><Document /></el-icon>
-                    <span>在"探索"中打开</span>
-                  </el-dropdown-item>
-                  <el-dropdown-item divided @click="handleDelete" class="danger">
-                    <el-icon><Delete /></el-icon>
-                    <span>删除</span>
-                  </el-dropdown-item>
-                </el-dropdown-menu>
-              </template>
-            </el-dropdown>
-          </div>
-        </el-card>
-        <el-card class="app-card" shadow="hover" @click="router.push('/chat')">
-          <div class="app-info">
-            <el-avatar :size="40" src="https://avatars.githubusercontent.com/u/2?v=4" />
-            <div class="app-details">
-              <h3>编程助手</h3>
-              <p>智能助手</p>
+              <h3>{{ app.name }}</h3>
+              <p>{{ app.type }}</p>
             </div>
             <el-dropdown trigger="click" class="more-actions" @click.stop>
               <el-button type="text" class="more-btn">
@@ -121,7 +83,7 @@
 </template>
 
 <script setup>
-import { ref } from 'vue'
+import { ref, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
 import {
   Plus,
@@ -134,10 +96,12 @@ import {
 import CreateAppDialog from '../components/CreateAppDialog.vue'
 import TemplateDialog from '../components/TemplateDialog.vue'
 import { ElMessage } from 'element-plus'
+import { listApps } from '@/api/apps'
 
 const router = useRouter()
 const createDialogVisible = ref(false)
 const templateDialogVisible = ref(false)
+const appList = ref([])
 
 const showCreateDialog = () => {
   createDialogVisible.value = true
@@ -160,9 +124,9 @@ const handleCreateFromTemplate = (template) => {
 }
 
 // 处理更多操作
-const handleEditInfo = () => {
-  // 实现编辑信息逻辑
-  console.log('编辑应用信息')
+const handleEditInfo = (app) => {
+  // 跳转到编辑页面
+  router.push(`/chat-assistant/${app.id}`)
 }
 
 const handleCopy = () => {
@@ -184,6 +148,20 @@ const handleDelete = () => {
   // 实现删除逻辑
   console.log('删除应用')
 }
+
+// 获取应用列表
+const fetchAppList = async () => {
+  try {
+    const { data } = await listApps()
+    appList.value = data
+  } catch (error) {
+    ElMessage.error('获取应用列表失败：' + error.message)
+  }
+}
+
+onMounted(() => {
+  fetchAppList()
+})
 </script>
 
 <style scoped>
@@ -283,4 +261,4 @@ const handleDelete = () => {
     background-color: #fef0f0;
   }
 }
-</style> 
+</style>

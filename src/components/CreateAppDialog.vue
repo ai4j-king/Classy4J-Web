@@ -130,6 +130,7 @@ import {
 import { useRouter } from 'vue-router'
 import { ElMessage } from 'element-plus'
 import { createChatHelper } from '@/api/chatAssistant'
+import { createApp } from '@/api/apps'
 
 const props = defineProps({
   visible: {
@@ -167,7 +168,11 @@ const handleClose = () => {
 
 const handleCreate = async () => {
   try {
-    await createChatHelper()
+    await createApp({
+      name: appName.value,
+      description: appDescription.value,
+      type: selectedType.value
+    })
     ElMessage.success('已创建应用')
     emit('update:visible', false)
     router.push('/chat-assistant/create')
@@ -268,4 +273,4 @@ const handleCreate = async () => {
   justify-content: flex-end;
   gap: 12px;
 }
-</style> 
+</style>

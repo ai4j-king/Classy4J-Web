@@ -10,6 +10,7 @@
         <el-menu-item index="/">全部</el-menu-item>
         <el-menu-item index="/chatHelper">聊天助手</el-menu-item>
         <el-menu-item index="/agent">Agent</el-menu-item>
+        <el-menu-item index="/knowledge">知识库</el-menu-item>
         <el-menu-item index="/workflow">工作流</el-menu-item>
       </el-menu>
     </div>

@@ -27,7 +27,7 @@
     <div class="section">
       <h2 class="section-title">最近使用</h2>
       <div class="card-list">
-        <el-card v-for="app in appList" :key="app.id" class="app-card" shadow="hover" @click="router.push(`/apps/${app.id}`)">
+        <el-card v-for="app in appList" :key="app.id" class="app-card" shadow="hover" @click="handleEditInfo(app)">
           <div class="app-info">
             <el-avatar :size="40" :src="app.avatar || 'https://avatars.githubusercontent.com/u/1?v=4'" />
             <div class="app-details">
@@ -125,8 +125,16 @@ const handleCreateFromTemplate = (template) => {
 
 // 处理更多操作
 const handleEditInfo = (app) => {
+  console.log('编辑应用信息:', app)
+  if (!app || !app.appId) {
+    ElMessage.warning('应用信息不完整')
+    return
+  }
   // 跳转到编辑页面
-  router.push(`/chat-assistant/${app.id}`)
+  router.push({
+    path: '/chat-assistant/create',
+    query: { id: app.appId }
+  })
 }
 
 const handleCopy = () => {

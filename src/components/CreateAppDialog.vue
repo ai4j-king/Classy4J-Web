@@ -168,6 +168,15 @@ const handleClose = () => {
 
 const handleCreate = async () => {
   try {
+    if (!appName.value.trim()) {
+      ElMessage.warning('请输入应用名称')
+      return
+    }
+    if (!selectedType.value) {
+      ElMessage.warning('请选择应用类型')
+      return
+    }
+
     await createApp({
       name: appName.value,
       description: appDescription.value,
@@ -175,9 +184,27 @@ const handleCreate = async () => {
     })
     ElMessage.success('已创建应用')
     emit('update:visible', false)
-    router.push('/chat-assistant/create')
+
+    routeBySelectedType()
   } catch (error) {
     ElMessage.error('创建应用失败：' + (error.response?.data?.message || error.message))
+  }
+}
+
+const routeBySelectedType = () => {
+  switch (selectedType.value) {
+    case 'chat':
+      router.push('/chat-assistant/create')
+      break
+    case 'agent':
+      router.push('/agent-assistant/create')
+      break
+    case 'workflow':
+      router.push('/workflow/create')
+      break
+    default:
+      ElMessage.error('未知的应用类型')
+      return
   }
 }
 

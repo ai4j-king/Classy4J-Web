@@ -428,8 +428,7 @@
 </template>
 
 <script setup>
-import { ref, reactive, computed, onMounted } from 'vue'
-import { useRoute } from 'vue-router'
+import { ref, reactive, computed } from 'vue'
 import {
   ArrowRight,
   ArrowDown,
@@ -451,54 +450,7 @@ import {
 } from '@element-plus/icons-vue'
 import PromptGenerator from '@/components/PromptGenerator.vue'
 import { ElMessage } from 'element-plus'
-import { sendMessage } from '@/api/chat_new'
-import { updateAppConfig, updateAppStatus, getAppById } from '@/api/apps'
-
-// 获取路由参数
-const route = useRoute()
-// 应用ID
-const appId = ref(route.query.id)
-console.log('路由参数:', route.query)
-console.log('应用ID:', route.query.id)
-
-// 加载应用配置
-const loadAppConfig = async () => {
-  try {
-    if (!appId.value) {
-      return
-    }
-    const { data } = await getAppById(appId.value)
-    console.log(data)
-    
-    // 从appConfig中加载配置
-    if (data.appConfig) {
-      // 加载提示词
-      if (data.appConfig.configs && data.appConfig.configs.prompt) {
-        prompt.value = data.appConfig.configs.prompt
-      }
-      
-      // 加载模型配置
-      if (data.appConfig.modelConfig) {
-        const { modelConfig } = data.appConfig
-        selectedModel.value = modelConfig.modelName || 'gpt-3.5-turbo-0125'
-        
-        // 加载各项参数配置
-        Object.entries(modelConfig).forEach(([key, value]) => {
-          if (params[key] && typeof value === 'object') {
-            params[key] = { ...params[key], ...value }
-          }
-        })
-      }
-    }
-  } catch (error) {
-    console.error('加载应用配置失败:', error)
-    ElMessage.error('加载应用配置失败，请重试')
-  }
-}
-
-onMounted(() => {
-  loadAppConfig()
-})
+import { sendChatMessage } from '@/api/chatAssistant'
 
 // 状态变量
 const prompt = ref('')
@@ -646,15 +598,15 @@ const handleSendTest = async () => {
 
   try {
     // 发送请求到后端
-    const response = await sendMessage(appId.value, {
-      content: testMessage.value,
-      type: 'text'
+    const response = await sendChatMessage({
+      message: testMessage.value,
+      model: selectedModel.value
     })
 
     // 添加助手回复到列表
     chatMessages.value.push({
       role: 'assistant',
-      content: response.data.aiResponse.content
+      content: response.data
     })
   } catch (error) {
     ElMessage.error('发送消息失败，请重试')
@@ -713,34 +665,8 @@ const handlePublishCommand = (command) => {
 }
 
 // 处理发布更新
-const handlePublishUpdate = async () => {
-  try {
-    // 更新应用配置
-    await updateAppConfig(appId.value, {
-      modelConfig: {
-        temperature: params.temperature,
-        topP: params.topP,
-        presencePenalty: params.presencePenalty,
-        frequencyPenalty: params.frequencyPenalty,
-        maxTokens: params.maxTokens,
-        responseFormat: params.responseFormat,
-        modelName: selectedModel.value
-      },
-      configs: {
-        prompt: prompt.value
-      }
-    })
-
-    // 更新应用状态为已发布
-    await updateAppStatus(appId.value, {
-      status: 'enabled'
-    })
-
-    ElMessage.success('发布成功')
-  } catch (error) {
-    console.error('发布失败:', error)
-    ElMessage.error('发布失败，请重试')
-  }
+const handlePublishUpdate = () => {
+  console.log('发布更新')
 }
 </script>
 
@@ -1323,4 +1249,4 @@ const handlePublishUpdate = async () => {
     }
   }
 }
-</style>
+</style> 

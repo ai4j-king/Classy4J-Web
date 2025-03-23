@@ -2,8 +2,14 @@ import { createRouter, createWebHistory } from 'vue-router'
 import HomeView from '../views/HomeView.vue'
 import AgentView from '../views/AgentView.vue'
 import WorkflowView from '../views/WorkflowView.vue'
+import KnowledgeView from '@/views/KnowledgeView.vue'
+import KnowledgeCreateView from '@/views/KnowledgeCreateView.vue'
 import ChatView from '../views/ChatView.vue'
 import ChatHelperView from '../views/ChatHelperView.vue'
+import ChatAssistantCreate  from '@/views/ChatAssistantCreate.vue'
+import AgentAssistantCreate from '@/views/AgentAssistantCreate.vue'
+import WorkflowCreate from '@/views/WorkflowCreate.vue'
+
 const router = createRouter({
   history: createWebHistory(import.meta.env.BASE_URL),
   routes: [
@@ -23,6 +29,16 @@ const router = createRouter({
       component: WorkflowView
     },
     {
+      path: '/knowledge',
+      name: 'knowledge',
+      component: KnowledgeView
+    },
+    {
+      path: '/knowledge/create',
+      name: 'knowledgeCreate',
+      component: KnowledgeCreateView
+    },
+    {
       path: '/chat',
       name: 'chat',
       component: ChatView
@@ -35,7 +51,17 @@ const router = createRouter({
     {
       path: '/chat-assistant/create',
       name: 'ChatAssistantCreate',
-      component: () => import('@/views/ChatAssistantCreate.vue')
+      component: ChatAssistantCreate
+    },
+    {
+      path: '/agent-assistant/create',
+      name: 'AgentAssistantCreate',
+      component: AgentAssistantCreate
+    },
+    {
+      path: '/workflow/create',
+      name: 'WorkflowCreate',
+      component: WorkflowCreate
     }
   ]
 })

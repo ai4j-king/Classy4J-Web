@@ -12,9 +12,17 @@
     "@element-plus/icons-vue": "^2.3.1",
     "axios": "^1.8.3",
     "element-plus": "^2.9.6",
+    "jquery": "^3.7.1",
+    "mammoth": "^1.9.0",
+    "marked": "^15.0.7",
+    "pdfjs-dist": "^3.4.120",
     "pinia": "^3.0.1",
+    "pptx2json": "^0.0.10",
+    "pptxgenjs": "^3.12.0",
+    "pptxjs": "^0.0.0",
     "vue": "^3.5.13",
-    "vue-router": "^4.5.0"
+    "vue-router": "^4.5.0",
+    "xlsx": "^0.18.5"
   },
   "devDependencies": {
     "@vitejs/plugin-vue": "^5.2.1",

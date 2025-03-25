@@ -108,7 +108,7 @@ const handleCreate = () => {
 <style scoped>
 .knowledge-view {
   padding: 16px 24px;
-  height: 100vh;
+  height: 100%;
   background-color: var(--el-bg-color);
 }
 

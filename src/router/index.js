@@ -12,6 +12,7 @@ import AgentAssistantCreate from '@/views/AgentAssistantCreate.vue'
 import WorkflowCreate from '@/views/WorkflowCreate.vue'
 import KnowledgeCreateStepThridView from '@/views/KnowledgeCreateStepThridView.vue'
 import DocListView from '@/views/DocListView.vue'
+import KnowledgeLableView from '@/views/KnowledgeLableView.vue'
 
 
 const router = createRouter({
@@ -81,6 +82,11 @@ const router = createRouter({
       path: '/knowledge/docs',
       name: 'DocListView',
       component: DocListView
+    },
+    {
+      path: '/knowledge/label',
+      name: 'KnowledgeLableView',
+      component: KnowledgeLableView
     }
   ]
 })

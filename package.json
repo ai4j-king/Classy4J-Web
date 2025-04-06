@@ -10,23 +10,28 @@
   },
   "dependencies": {
     "@element-plus/icons-vue": "^2.3.1",
-    "axios": "^1.8.3",
-    "element-plus": "^2.9.6",
+    "@vue-flow/background": "^1.3.2",
+    "@vue-flow/controls": "^1.1.2",
+    "@vue-flow/core": "^1.42.5",
+    "@vue-flow/minimap": "^1.5.3",
+    "@vue-flow/node-toolbar": "^1.1.1",
+    "axios": "^1.8.4",
+    "element-plus": "^2.9.7",
     "jquery": "^3.7.1",
     "mammoth": "^1.9.0",
     "marked": "^15.0.7",
-    "pdfjs-dist": "^3.4.120",
+    "pdfjs-dist": "^5.1.91",
     "pinia": "^3.0.1",
     "pptx2json": "^0.0.10",
     "pptxgenjs": "^3.12.0",
     "pptxjs": "^0.0.0",
     "vue": "^3.5.13",
     "vue-router": "^4.5.0",
-    "xlsx": "^0.18.5"
+    "xlsx": "https://cdn.sheetjs.com/xlsx-0.20.3/xlsx-0.20.3.tgz"
   },
   "devDependencies": {
-    "@vitejs/plugin-vue": "^5.2.1",
-    "vite": "^6.2.1",
+    "@vitejs/plugin-vue": "^5.2.3",
+    "vite": "^6.2.5",
     "vite-plugin-vue-devtools": "^7.7.2"
   }
 }

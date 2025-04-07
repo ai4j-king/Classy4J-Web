@@ -32,7 +32,7 @@
             <el-avatar :size="40" :src="app.avatar || 'https://avatars.githubusercontent.com/u/1?v=4'" />
             <div class="app-details">
               <h3>{{ app.name }}</h3>
-              <p>{{ app.type }}</p>
+              <p>{{ app.mode }}</p>
             </div>
             <el-dropdown trigger="click" class="more-actions" @click.stop>
               <el-button type="text" class="more-btn">
@@ -126,14 +126,14 @@ const handleCreateFromTemplate = (template) => {
 // 处理更多操作
 const handleEditInfo = (app) => {
   console.log('编辑应用信息:', app)
-  if (!app || !app.appId) {
+  if (!app || !app.id) {
     ElMessage.warning('应用信息不完整')
     return
   }
   // 跳转到编辑页面
   router.push({
     path: '/chat-assistant/create',
-    query: { id: app.appId }
+    query: { id: app.id }
   })
 }
 
@@ -160,8 +160,15 @@ const handleDelete = () => {
 // 获取应用列表
 const fetchAppList = async () => {
   try {
-    const { data } = await listApps()
-    appList.value = data
+    const data = await listApps()
+    if (Array.isArray(data)) {
+      appList.value = data
+    } else if (data && Array.isArray(data.content)) {
+      appList.value = data.content
+    } else {
+      appList.value = []
+      ElMessage.warning('获取应用列表数据格式异常')
+    }
   } catch (error) {
     ElMessage.error('获取应用列表失败：' + error.message)
   }

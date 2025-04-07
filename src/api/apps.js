@@ -3,7 +3,7 @@ import request from '@/utils/request'
 // 创建应用
 export function createApp(data) {
   return request({
-    url: '/api/v1/apps/create',
+    url: '/api/apps/create',
     method: 'post',
     data
   })
@@ -12,8 +12,8 @@ export function createApp(data) {
 // 更新应用配置
 export function updateAppConfig(appId, data) {
   return request({
-    url: `/api/v1/apps/${appId}/config`,
-    method: 'put',
+    url: `/api/apps/${appId}/model-config`,
+    method: 'post',
     data
   })
 }
@@ -38,7 +38,7 @@ export function deleteApp(appId) {
 // 获取应用列表
 export function listApps(params) {
   return request({
-    url: '/api/v1/apps/listApps',
+    url: '/api/apps/listApps',
     method: 'get',
     params
   })
@@ -47,7 +47,7 @@ export function listApps(params) {
 // 获取应用详情
 export function getAppById(appId) {
   return request({
-    url: `/api/v1/apps/${appId}`,
+    url: `/api/apps/${appId}`,
     method: 'get'
   })
 }

@@ -3,7 +3,7 @@ import request from '@/utils/request'
 // 发送消息
 export function sendMessage(appId, data) {
   return request({
-    url: `/api/v1/apps/${appId}/chat/messages`,
+    url: `/api/apps/${appId}/chat-messages`,
     method: 'post',
     data
   })

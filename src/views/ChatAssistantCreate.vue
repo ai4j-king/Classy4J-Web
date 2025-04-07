@@ -453,6 +453,7 @@ import PromptGenerator from '@/components/PromptGenerator.vue'
 import { ElMessage } from 'element-plus'
 import { sendMessage } from '@/api/chat_new'
 import { updateAppConfig, updateAppStatus, getAppById } from '@/api/apps'
+import { getLLMModels } from '@/api/models'
 
 // 获取路由参数
 const route = useRoute()
@@ -467,28 +468,37 @@ const loadAppConfig = async () => {
     if (!appId.value) {
       return
     }
-    const { data } = await getAppById(appId.value)
-    console.log(data)
+    const data = await getAppById(appId.value)
+    console.log('加载的应用数据:', data)
     
-    // 从appConfig中加载配置
-    if (data.appConfig) {
-      // 加载提示词
-      if (data.appConfig.configs && data.appConfig.configs.prompt) {
-        prompt.value = data.appConfig.configs.prompt
+    // 从App实体中获取AppModelConfig配置
+    if (data.appModelConfig) {
+      // 加载模型名称
+      if (data.appModelConfig.model) {
+        selectedModel.value = data.appModelConfig.model.name
       }
       
-      // 加载模型配置
-      if (data.appConfig.modelConfig) {
-        const { modelConfig } = data.appConfig
-        selectedModel.value = modelConfig.modelName || 'gpt-3.5-turbo-0125'
-        
-        // 加载各项参数配置
-        Object.entries(modelConfig).forEach(([key, value]) => {
-          if (params[key] && typeof value === 'object') {
-            params[key] = { ...params[key], ...value }
-          }
-        })
+      // 加载提示词配置
+      if (data.appModelConfig.prePrompt) {
+        prompt.value = data.appModelConfig.prePrompt
       }
+      
+      // 加载模型参数配置
+      const modelParams = {
+        temperature: { enabled: false, value: 0 },
+        topP: { enabled: false, value: 1 },
+        presencePenalty: { enabled: false, value: 0 },
+        frequencyPenalty: { enabled: false, value: 0 },
+        maxTokens: { enabled: false, value: 512 },
+        responseFormat: { enabled: false, value: 'default' }
+      }
+      
+      // 更新参数配置
+      Object.keys(params).forEach(key => {
+        if (modelParams[key]) {
+          params[key] = { ...params[key], ...modelParams[key] }
+        }
+      })
     }
   } catch (error) {
     console.error('加载应用配置失败:', error)
@@ -508,41 +518,17 @@ const showPromptGenerator = ref(false)
 const generatorPrompt = ref('')
 const selectedExample = ref(null)
 
-// 模型列表
-const models = [
-  {
-    label: 'gpt-3.5-turbo-0125',
-    value: 'gpt-3.5-turbo-0125',
-    icon: 'path/to/gpt-icon.png'
-  },
-  {
-    label: 'gpt-4',
-    value: 'gpt-4',
-    icon: 'path/to/gpt4-icon.png'
-  },
-  {
-    label: 'claude-3-opus',
-    value: 'claude-3-opus',
-    icon: 'path/to/claude-icon.png'
-  },
-  {
-    label: 'claude-3-sonnet',
-    value: 'claude-3-sonnet',
-    icon: 'path/to/claude-icon.png'
-  }
-]
-
 const searchQuery = ref('')
-const filteredModels = ref(models)
 
+// 模型搜索过滤
 const filterModels = (query) => {
   searchQuery.value = query
   if (query) {
-    filteredModels.value = models.filter(model => 
+    filteredModels.value = models.value.filter(model => 
       model.label.toLowerCase().includes(query.toLowerCase())
     )
   } else {
-    filteredModels.value = models
+    filteredModels.value = models.value
   }
 }
 
@@ -645,16 +631,36 @@ const handleSendTest = async () => {
   })
 
   try {
+    // 获取当前选中模型的配置
+    const currentModel = models.value.find(m => m.value === selectedModel.value)
+    if (!currentModel) {
+      ElMessage.error('请选择模型')
+      return
+    }
+
+    // 构建模型配置参数
+    const modelConfig = {
+      model: currentModel.value,
+      temperature: params.temperature.enabled ? params.temperature.value : undefined,
+      top_p: params.topP.enabled ? params.topP.value : undefined,
+      presence_penalty: params.presencePenalty.enabled ? params.presencePenalty.value : undefined,
+      frequency_penalty: params.frequencyPenalty.enabled ? params.frequencyPenalty.value : undefined,
+      max_tokens: params.maxTokens.enabled ? params.maxTokens.value : undefined,
+      response_format: params.responseFormat.enabled ? params.responseFormat.value : undefined
+    }
+
     // 发送请求到后端
     const response = await sendMessage(appId.value, {
-      content: testMessage.value,
-      type: 'text'
+      query: testMessage.value,
+      type: 'text',
+      response_mode: 'streaming',
+      model_config: modelConfig
     })
-
+    console.log('收到的响应:', response)
     // 添加助手回复到列表
     chatMessages.value.push({
       role: 'assistant',
-      content: response.data.aiResponse.content
+      content: response.data.answer
     })
   } catch (error) {
     ElMessage.error('发送消息失败，请重试')
@@ -672,6 +678,7 @@ const handleMultiModelTest = () => {
 
 // 获取当前选中模型的图标
 const getCurrentModelIcon = () => {
+  if (!models?.length) return ''
   const currentModel = models.find(m => m.value === selectedModel.value)
   return currentModel?.icon || ''
 }
@@ -717,23 +724,53 @@ const handlePublishUpdate = async () => {
   try {
     // 更新应用配置
     await updateAppConfig(appId.value, {
-      modelConfig: {
-        temperature: params.temperature,
-        topP: params.topP,
-        presencePenalty: params.presencePenalty,
-        frequencyPenalty: params.frequencyPenalty,
-        maxTokens: params.maxTokens,
-        responseFormat: params.responseFormat,
-        modelName: selectedModel.value
+      pre_prompt: prompt.value,
+      prompt_type: 'simple',
+      chat_prompt_config: {},
+      completion_prompt_config: {},
+      user_input_form: [],
+      dataset_query_variable: '',
+      more_like_this: { enabled: false },
+      opening_statement: '',
+      suggested_questions: [],
+      sensitive_word_avoidance: { enabled: false, type: '', configs: [] },
+      speech_to_text: { enabled: false },
+      text_to_speech: { enabled: false, voice: '', language: '' },
+      file_upload: {
+        image: {
+          detail: 'high',
+          enabled: false,
+          number_limits: 3,
+          transfer_methods: ['remote_url', 'local_file']
+        },
+        enabled: false,
+        allowed_file_types: [],
+        allowed_file_extensions: ['.JPG', '.JPEG', '.PNG', '.GIF', '.WEBP', '.SVG', '.MP4', '.MOV', '.MPEG', '.MPGA'],
+        allowed_file_upload_methods: ['remote_url', 'local_file'],
+        number_limits: 3
       },
-      configs: {
-        prompt: prompt.value
+      suggested_questions_after_answer: { enabled: false },
+      retriever_resource: { enabled: true },
+      agent_mode: { enabled: false, max_iteration: 5, strategy: 'function_call', tools: [] },
+      model: {
+        provider: 'langgenius/deepseek/deepseek',
+        name: selectedModel.value,
+        mode: 'chat',
+        completion_params: {
+          stop: [],
+          temperature: params.temperature.enabled ? params.temperature.value : 0,
+          top_p: params.topP.enabled ? params.topP.value : 1,
+          presence_penalty: params.presencePenalty.enabled ? params.presencePenalty.value : 0,
+          frequency_penalty: params.frequencyPenalty.enabled ? params.frequencyPenalty.value : 0,
+          max_tokens: params.maxTokens.enabled ? params.maxTokens.value : 512
+        }
+      },
+      dataset_configs: {
+        retrieval_model: 'multiple',
+        top_k: 4,
+        reranking_enable: false,
+        datasets: { datasets: [] }
       }
-    })
-
-    // 更新应用状态为已发布
-    await updateAppStatus(appId.value, {
-      status: 'enabled'
     })
 
     ElMessage.success('发布成功')
@@ -742,6 +779,34 @@ const handlePublishUpdate = async () => {
     ElMessage.error('发布失败，请重试')
   }
 }
+
+// 状态变量
+const models = ref([])
+const filteredModels = ref([])
+
+// 获取模型列表
+const loadModels = async () => {
+  try {
+    const { data } = await getLLMModels()
+    models.value = data.flatMap(provider => 
+      provider.models.map(model => ({
+        label: model.model,
+        value: model.model,
+        // icon: provider.icon_small.zh_Hans || provider.icon_small.en_US
+      }))
+    )
+    filteredModels.value = models.value
+  } catch (error) {
+    console.error('加载模型列表失败:', error)
+    ElMessage.error('加载模型列表失败，请重试')
+  }
+}
+
+onMounted(() => {
+  loadModels()
+  loadAppConfig()
+})
+
 </script>
 
 <style scoped>

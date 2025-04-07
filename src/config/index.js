@@ -1,10 +1,10 @@
 const config = {
   development: {
-    baseURL: 'http://localhost:8080',
+    baseURL: 'http://localhost:8081',
     apiPrefix: '/langchain'
   },
   production: {
-    baseURL: 'http://localhost:8080', // 生产环境可以改为实际的域名
+    baseURL: 'http://localhost:8081', // 生产环境可以改为实际的域名
     apiPrefix: '/langchain'
   }
 }

@@ -35,12 +35,27 @@
         :max-zoom="4"
         @paneContextMenu="handleContextMenu"
       >
-        <!-- <template #node-default="{ id, data }">
-          <div style="display: flex; align-items: left; gap: 5px;">
-            <el-icon v-if="id === 'start-node'"><House /></el-icon>
-            <span>{{ data.label }}</span>
-          </div>
-        </template> -->
+        <template #node-start="props">
+          <WorkflowStartNode :id="props.id" :data="props.data"/>
+        </template>
+
+        <template #node-output>
+          <WorkflowLLMNode/>
+        </template>
+
+        <template #node-llm>
+          <WorkflowLLMNode/>
+        </template>
+
+        <template #node-llm1>
+          <WorkflowLLMNode/>
+        </template>
+
+        <template #node-llm2>
+          <WorkflowLLMNode/>
+        </template>
+
+
         <div v-if="contextMenuVisible" class="context-menu" :style="{
           left: contextMenuPosition.x + 'px',
           top: contextMenuPosition.y + 'px'
@@ -73,6 +88,11 @@
         </Controls>
 
       </VueFlow>
+      
+      <AddNodeDialog
+        v-model:visible="showAddNodeDialog"
+        @select="handleNodeSelect"
+      />
     </div>
   </div>
 </template>
@@ -88,6 +108,9 @@ import { ControlButton, Controls } from '@vue-flow/controls'
 import { MiniMap } from '@vue-flow/minimap'
 import Icon from '../components/WorkflowIcon.vue'
 import { ElMessage } from 'element-plus'
+import WorkflowStartNode from '../components/WorkflowStartNode.vue'
+import WorkflowLLMNode from '../components/WorkflowLLMNode.vue'
+import AddNodeDialog from '../components/AddNodeDialog.vue'
 
 const contextMenuVisible = ref(false)
 const contextMenuPosition = ref({ x: 0, y: 0 })
@@ -96,30 +119,68 @@ const { addNodes, project } = useVueFlow()
 const initialNodes = [
   {
     id: '1',
-    type: 'input',
-    data: { label: '开始' },
-    position: { x: 50, y: 200 },
-    class: 'light',
-    sourcePosition: Position.Right
+    type: 'start',
+    data: { color: '#6F3381' },
+    position: { x: 50, y: 200 },    
   },
   {
     id: '2',
-    type: 'input',
-    data: { label: 'LLM' },
+    type: 'output',    
     position: { x: 210, y: 200 },
-    class: 'light',
-    targetPosition: Position.Left
+    targetPosition: Position.Left,
+  },
+  {
+    id: '3',
+    type: 'output',    
+    position: { x: 350, y: 200 },
+    targetPosition: Position.Left,
+  },
+  {
+    id: '4',
+    type: 'output',    
+    position: { x: 350, y: 260 },
+    targetPosition: Position.Left,
+  },
+  {
+    id: '5',
+    type: 'output',    
+    position: { x: 480, y: 200 },
+    targetPosition: Position.Left,
   }
 ]
 
 const initialEdges = [
   { 
-    id: 'e1-2', 
+    id: 'e1a-2', 
     source: '1', 
+    sourceHandle: 'start-right',
     target: '2', 
     animated: true,
-    sourceHandle: 'right',
-    targetHandle: 'left'
+    style: { stroke: '#6F3381'},
+  },
+  { 
+    id: 'e2-3', 
+    source: '2', 
+    sourceHandle: 'llm-right',
+    target: '3', 
+    animated: true,
+    style: { stroke: '#6F3381'},
+  },
+  { 
+    id: 'e2-4', 
+    source: '2', 
+    sourceHandle: 'llm-right',
+    target: '4', 
+    animated: true,
+    style: { stroke: '#6F3381'},
+  },
+  { 
+    id: 'e3-5', 
+    source: '3', 
+    sourceHandle: 'llm-right',
+    target: '5', 
+    animated: true,
+    style: { stroke: '#6F3381'},
   }
 ] 
 
@@ -136,15 +197,22 @@ const handleContextMenu = (event) => {
   contextMenuVisible.value = true
 }
 
+const showAddNodeDialog = ref(false)
+
 const handleAddNode = () => {
+  showAddNodeDialog.value = true
+  contextMenuVisible.value = false
+
+  console.log('handleAddNode called.' + showAddNodeDialog.value)
+}
+
+const handleNodeSelect = (nodeType) => {
   const newNode = {
     id: `node-${Date.now()}`,
-    type: 'default',
-    label: '新节点',
+    type: nodeType,
     position: contextMenuPosition.value
   }
   addNodes([newNode])
-  contextMenuVisible.value = false
 }
 
 const handleAddComment = () => {
@@ -178,11 +246,9 @@ const logToObject = () => {
 const resetTransform = () => {
   setViewport({ x: 0, y: 0, zoom: 1 })
 } 
-
 const toggleDarkMode = () => {
   dark.value = !dark.value
 }
-
 const updatePos = () => {
   nodes.value = nodes.value.map((node) => {
     return {
@@ -295,15 +361,26 @@ const updatePos = () => {
 
 :deep(.vue-flow__node) {
   font-size: 10px; /* 全局设置标签文字大小 */
-  padding: 3px 10px;
+  padding: 6px 10px;
   background: '#fff';
   border: 1px solid var(--el-color-primary);
-  border-radius: 10px;
-  padding: 3px 15px;
+  border-radius: 5px;
   width: 100px;
   display: flex;
   align-items: left;
   justify-content: left;
-  gap: 2px
+  gap: 2px;
+  height: 30px;
+  transition: background-color 0.3s;
 }
+
+:deep(.vue-flow__node.selected) {
+  background-color: #c9def5;
+  border-color: var(--el-color-primary);
+}
+
+:deep(.vue-flow__handle) {
+    border-radius:2px
+}
+
 </style>

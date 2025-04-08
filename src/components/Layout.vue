@@ -31,7 +31,7 @@ import Navigation from './Navigation.vue'
 
 .main-content {
   flex: 1;
-  padding: 20px;
+  padding: 1px;
   background-color: #f5f7fa;
   overflow-y: auto;
   width: 100%;

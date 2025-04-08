@@ -4,11 +4,16 @@ import AgentView from '../views/AgentView.vue'
 import WorkflowView from '../views/WorkflowView.vue'
 import KnowledgeView from '@/views/KnowledgeView.vue'
 import KnowledgeCreateView from '@/views/KnowledgeCreateView.vue'
+import KnowledgeCreateStepTwoView from '@/views/KnowledgeCreateStepTwoView.vue'
 import ChatView from '../views/ChatView.vue'
 import ChatHelperView from '../views/ChatHelperView.vue'
 import ChatAssistantCreate  from '@/views/ChatAssistantCreate.vue'
 import AgentAssistantCreate from '@/views/AgentAssistantCreate.vue'
 import WorkflowCreate from '@/views/WorkflowCreate.vue'
+import KnowledgeCreateStepThridView from '@/views/KnowledgeCreateStepThridView.vue'
+import DocListView from '@/views/DocListView.vue'
+import KnowledgeLableView from '@/views/KnowledgeLableView.vue'
+
 
 const router = createRouter({
   history: createWebHistory(import.meta.env.BASE_URL),
@@ -34,9 +39,19 @@ const router = createRouter({
       component: KnowledgeView
     },
     {
-      path: '/knowledge/create',
-      name: 'knowledgeCreate',
-      component: KnowledgeCreateView
+        path: '/knowledge/create',
+        name: 'knowledgeCreate',
+        component: KnowledgeCreateView
+    },
+    {
+      path: '/knowledge/create/step-two',
+      name: 'KnowledgeCreateStepTwo',
+      component: KnowledgeCreateStepTwoView
+    },
+    {
+      path: '/knowledge/create/step-three',
+      name: 'KnowledgeCreateStepThridView',
+      component: KnowledgeCreateStepThridView      
     },
     {
       path: '/chat',
@@ -62,6 +77,16 @@ const router = createRouter({
       path: '/workflow/create',
       name: 'WorkflowCreate',
       component: WorkflowCreate
+    },
+    {
+      path: '/knowledge/docs',
+      name: 'DocListView',
+      component: DocListView
+    },
+    {
+      path: '/knowledge/label',
+      name: 'KnowledgeLableView',
+      component: KnowledgeLableView
     }
   ]
 })

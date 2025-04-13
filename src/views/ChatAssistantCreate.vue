@@ -520,15 +520,41 @@ const selectedExample = ref(null)
 
 const searchQuery = ref('')
 
+
+// 模型列表数据
+const modelList = ref([])
+const filteredModels = ref([])
+
+// 初始化模型列表
+const initModelList = async () => {
+  try {
+    const { data } = await getLLMModels()
+    modelList.value = data.flatMap(provider => 
+      provider.models.map(model => ({
+        label: model.model,
+        value: model.model,
+        icon: '',
+        parameterRules: model.parameterRules || {}
+        // icon: provider.icon_small.zh_Hans || provider.icon_small.en_US
+      }))
+    )
+    filteredModels.value = modelList.value
+  } catch (error) {
+    console.error('获取模型列表失败:', error)
+    ElMessage.error('获取模型列表失败，请重试')
+  }
+}
+
 // 模型搜索过滤
 const filterModels = (query) => {
   searchQuery.value = query
+  console.log('搜索查询:', query)
   if (query) {
-    filteredModels.value = models.value.filter(model => 
+    filteredModels.value = modelList.value.filter(model => 
       model.label.toLowerCase().includes(query.toLowerCase())
     )
   } else {
-    filteredModels.value = models.value
+    filteredModels.value = modelList.value
   }
 }
 
@@ -632,31 +658,19 @@ const handleSendTest = async () => {
 
   try {
     // 获取当前选中模型的配置
-    const currentModel = models.value.find(m => m.value === selectedModel.value)
-    if (!currentModel) {
-      ElMessage.error('请选择模型')
-      return
-    }
-
-    // 构建模型配置参数
-    const modelConfig = {
-      model: currentModel.value,
-      temperature: params.temperature.enabled ? params.temperature.value : undefined,
-      top_p: params.topP.enabled ? params.topP.value : undefined,
-      presence_penalty: params.presencePenalty.enabled ? params.presencePenalty.value : undefined,
-      frequency_penalty: params.frequencyPenalty.enabled ? params.frequencyPenalty.value : undefined,
-      max_tokens: params.maxTokens.enabled ? params.maxTokens.value : undefined,
-      response_format: params.responseFormat.enabled ? params.responseFormat.value : undefined
-    }
-
+    const currentModelConfig = modelList.value[selectedModel.value] || {}
+    console.log('当前选中模型的配置:', currentModelConfig)
     // 发送请求到后端
     const response = await sendMessage(appId.value, {
-      query: testMessage.value,
-      type: 'text',
       response_mode: 'streaming',
-      model_config: modelConfig
+      conversation_id: '',
+      files: [],
+      query: testMessage.value,
+      inputs: {},
+      model_config: currentModelConfig,
+      parent_message_id: null
     })
-    console.log('收到的响应:', response)
+
     // 添加助手回复到列表
     chatMessages.value.push({
       role: 'assistant',
@@ -678,8 +692,8 @@ const handleMultiModelTest = () => {
 
 // 获取当前选中模型的图标
 const getCurrentModelIcon = () => {
-  if (!models?.length) return ''
-  const currentModel = models.find(m => m.value === selectedModel.value)
+  if (!modelList?.length) return ''
+  const currentModel = modelList.find(m => m.value === selectedModel.value)
   return currentModel?.icon || ''
 }
 
@@ -780,31 +794,10 @@ const handlePublishUpdate = async () => {
   }
 }
 
-// 状态变量
-const models = ref([])
-const filteredModels = ref([])
-
-// 获取模型列表
-const loadModels = async () => {
-  try {
-    const { data } = await getLLMModels()
-    models.value = data.flatMap(provider => 
-      provider.models.map(model => ({
-        label: model.model,
-        value: model.model,
-        // icon: provider.icon_small.zh_Hans || provider.icon_small.en_US
-      }))
-    )
-    filteredModels.value = models.value
-  } catch (error) {
-    console.error('加载模型列表失败:', error)
-    ElMessage.error('加载模型列表失败，请重试')
-  }
-}
 
 onMounted(() => {
-  loadModels()
   loadAppConfig()
+  initModelList()
 })
 
 </script>

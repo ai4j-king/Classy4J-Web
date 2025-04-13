@@ -130,6 +130,7 @@ import {
 import { useRouter } from 'vue-router'
 import { ElMessage } from 'element-plus'
 import { createChatHelper } from '@/api/chatAssistant'
+import { createApp } from '@/api/apps'
 
 const props = defineProps({
   visible: {
@@ -176,26 +177,31 @@ const handleCreate = async () => {
       return
     }
 
-    await createChatHelper()
+    const response = await createApp({
+      name: appName.value,
+      description: appDescription.value,
+      mode: selectedType.value
+    })
     ElMessage.success('已创建应用')
+    console.log('response:' + response)
     emit('update:visible', false)
 
-    routeBySelectedType()
+    routeBySelectedType(response.id)
   } catch (error) {
     ElMessage.error('创建应用失败：' + (error.response?.data?.message || error.message))
   }
 }
 
-const routeBySelectedType = () => {
+const routeBySelectedType = (appId) => {
   switch (selectedType.value) {
     case 'chat':
-      router.push('/chat-assistant/create')
+      router.push(`/chat-assistant/create?id=${appId}`)
       break
     case 'agent':
-      router.push('/agent-assistant/create')
+      router.push(`/agent-assistant/create?id=${appId}`)
       break
     case 'workflow':
-      router.push('/workflow/create')
+      router.push(`/workflow/create?id=${appId}`)
       break
     default:
       ElMessage.error('未知的应用类型')
@@ -295,4 +301,4 @@ const routeBySelectedType = () => {
   justify-content: flex-end;
   gap: 12px;
 }
-</style> 
+</style>

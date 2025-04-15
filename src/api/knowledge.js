@@ -30,10 +30,8 @@ service.interceptors.response.use(
   response => {
     const res = response.data
     // 这里可以根据后端的响应结构进行数据处理
-    if (res.code === 200) {
-      return res.data
-    }
-    return Promise.reject(new Error(res.message || '请求失败'))
+    return res
+    //return Promise.reject(new Error(res.message || '请求失败'))
   },
   error => {
     return Promise.reject(error)
@@ -65,3 +63,14 @@ export function saveAndHandle(data) {
   //   data
   // })
 } 
+
+/**
+ * 获取知识库列表
+ * @returns {Promise} 返回知识库列表数据
+ */
+export function fetchKnowledgeList() {
+  return service({
+    url: baseURL + '/api/datasets',
+    method: 'get'
+  })
+}

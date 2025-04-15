@@ -52,41 +52,74 @@
 
     <!-- 主要内容区域 -->
     <div class="main-content">
-      <!-- 创建知识库卡片 -->
-      <div class="create-card">
-        <el-button type="primary" plain class="create-btn" @click="handleCreate">
-          <el-icon><Plus /></el-icon>
-          创建知识库
-        </el-button>
-        <div class="hint-text">
-          导入您自己的文本或数据源，或通过 Webhook 变更写入数据库。LLM 的上下文。
-        </div>
-        <el-link type="primary" class="link-text">
-          连接外部知识库
-          <el-icon class="el-icon--right"><ArrowRight /></el-icon>
-        </el-link>
-      </div>
+      <el-row :gutter="24">
+        <!-- 创建知识库卡片 -->
+        <el-col :span="8">
+          <div class="create-card">
+            <el-button type="primary" plain class="create-btn" @click="handleCreate">
+              <el-icon><Plus /></el-icon>
+              创建知识库
+            </el-button>
+            <div class="hint-text">
+              导入您自己的文本或数据源，或通过 Webhook 变更写入数据库。LLM 的上下文。
+            </div>
+            <el-link type="primary" class="link-text">
+              连接外部知识库
+              <el-icon class="el-icon--right"><ArrowRight /></el-icon>
+            </el-link>
+          </div>
+        </el-col>
+
+        <!-- 知识库列表 -->
+        <el-col :span="8" v-for="item in knowledgeList" :key="item.id">
+          <el-card class="knowledge-card" shadow="hover">
+            <div class="card-header">
+              <h3 class="card-title">{{ item.name }}</h3>
+              <el-button-group>
+                <el-button link>
+                  <el-icon><Document /></el-icon>
+                </el-button>
+                <el-button link>
+                  <el-icon><InfoFilled /></el-icon>
+                </el-button>
+              </el-button-group>
+            </div>
+            <div class="card-content">
+              <div class="card-stats">
+                <span class="stat-item">{{ item.documentCount }} 个文档</span>
+                <span class="stat-divider">|</span>
+                <span class="stat-item">{{ item.wordCount }}</span>
+              </div>
+              <p class="card-description">{{ item.description }}</p>
+            </div>
+          </el-card>
+        </el-col>
+      </el-row>
     </div>
   </div>
 </template>
 
 <script setup>
-import { ref } from 'vue'
+import { ref, onMounted } from 'vue'
 import {
   Plus,
   Search,
   Setting,
   QuestionFilled,
-  ArrowRight
+  ArrowRight,
+  Document,
+  InfoFilled
 } from '@element-plus/icons-vue'
 import MultiSelectDropdown from '@/components/MultiSelectDropdown.vue'
 import { useRouter } from 'vue-router'
+import { fetchKnowledgeList as fetchKnowledgeListAPI } from '@/api/knowledge'
 
 const router = useRouter()
 
 const searchQuery = ref('')
 const showAllKnowledge = ref(false)
 const selectedTags = ref([])
+const knowledgeList = ref([])
 const availableTags = ref([
   '插件',
   '代码',
@@ -103,6 +136,22 @@ const availableTags = ref([
 const handleCreate = () => {
   router.push('/knowledge/create')
 }
+
+// 获取知识库列表数据
+const fetchKnowledgeList = async () => {
+  try {
+    const data = await fetchKnowledgeListAPI()
+    knowledgeList.value = data.datasets
+    console.log('获取知识库列表成功:', data)
+  } catch (error) {
+    console.error('获取知识库列表失败:', error)
+    ElMessage.error('获取知识库列表失败')
+  }
+}
+
+onMounted(() => {
+  fetchKnowledgeList()
+})
 </script>
 
 <style scoped>
@@ -169,7 +218,18 @@ const handleCreate = () => {
 }
 
 .main-content {
-  padding: 24px 0;
+  padding: 0;
+}
+
+.el-row {
+  margin-bottom: -16px;
+  &:last-child {
+    margin-bottom: 0;
+  }
+}
+
+.el-col {
+  margin-bottom: 16px;
 }
 
 .create-card {
@@ -180,8 +240,16 @@ const handleCreate = () => {
   padding: 24px;
   background-color: #fff;
   border-radius: 8px;
-  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.06);
-  max-width: 600px;
+  box-shadow: 0 2px 12px 0 rgba(0, 0, 0, 0.1);
+  height: 100%;
+  margin-bottom: 0;
+}
+
+.knowledge-card {
+  height: 100%;
+  margin-bottom: 0;
+  background-color: var(--el-color-primary-light-9);
+  transition: all 0.3s ease;
 }
 
 .create-btn {
@@ -225,4 +293,52 @@ const handleCreate = () => {
   color: #606266;
   border-color: #e4e7ed;
 }
-</style> 
+
+.knowledge-list {
+  margin-top: 0;
+}
+
+.knowledge-card:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.1);
+}
+
+.card-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 16px;
+}
+
+.card-title {
+  margin: 0;
+  font-size: 16px;
+  font-weight: 600;
+  color: var(--el-text-color-primary);
+}
+
+.card-content {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.card-stats {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  color: var(--el-text-color-secondary);
+  font-size: 14px;
+}
+
+.stat-divider {
+  color: #dcdfe6;
+}
+
+.card-description {
+  margin: 0;
+  font-size: 14px;
+  color: var(--el-text-color-regular);
+  line-height: 1.5;
+}
+</style>

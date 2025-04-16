@@ -5,7 +5,7 @@ import { baseURL } from '../config'
 // 创建axios实例
 const service = axios.create({
   baseURL: baseURL,
-  timeout: 15000
+  timeout: 30000
 })
 
 // 请求拦截器

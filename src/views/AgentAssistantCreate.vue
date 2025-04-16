@@ -552,7 +552,8 @@
 </template>
 
 <script setup>
-import { ref, reactive, computed } from 'vue'
+import { ref, reactive, computed, onMounted } from 'vue'
+import { getBuiltinTools } from '@/api/tools'
 import {
   ArrowRight,
   ArrowDown,
@@ -590,9 +591,6 @@ const showModelSelector = ref(false)
 const showPromptGenerator = ref(false)
 const generatorPrompt = ref('')
 const selectedExample = ref(null)
-const showToolTypes = ref(false)
-const toolSearchQuery = ref('')
-const selectedTools = ref([])
 const showCustomToolsDialog = ref(false)
 
 // 模型列表
@@ -716,79 +714,35 @@ const chatMessages = ref([])
 // 过滤器数据
 const filters = ref([
   { label: '全部', value: 'all', active: true },
-  { label: '插件', value: 'plugin', active: false },
-  { label: '代码', value: 'code', active: false },
-  { label: '数据库', value: 'database', active: false },
-  { label: 'API', value: 'api', active: false }
+  { label: '生产力', value: 'productivity', active: false },
+  { label: '实用工具', value: 'utilities', active: false }
 ])
 
-// 工具列表数据
-const tools = ref([
-  {
-    name: 'Audio',
-    icon: 'Headset',
-    category: ['plugin'],
-    expanded: false,
-    subTools: [
-      {
-        name: 'Speech To Text',
-        type: 'audio_stt'
-      },
-      {
-        name: 'Text To Speech',
-        type: 'audio_tts'
-      }
-    ]
-  },
-  {
-    name: '代码解释器',
-    icon: 'Monitor',
-    category: ['code'],
-    expanded: false,
-    subTools: [
-      {
-        name: 'Python Interpreter',
-        type: 'code_python'
-      },
-      {
-        name: 'JavaScript Interpreter',
-        type: 'code_javascript'
-      }
-    ]
-  },
-  {
-    name: '时间',
-    icon: 'Timer',
-    category: ['plugin'],
-    expanded: false,
-    subTools: [
-      {
-        name: 'Time Converter',
-        type: 'time_convert'
-      },
-      {
-        name: 'Time Zone',
-        type: 'time_zone'
-      }
-    ]
-  },
-  {
-    name: '网页抓取',
-    icon: 'Download',
-    category: ['api'],
-    expanded: false,
-    subTools: [
-      {
-        name: 'Web Scraper',
-        type: 'web_scrape'
-      },
-      {
-        name: 'API Caller',
-        type: 'web_api'
-      }
-    ]
+// 工具相关的响应式变量
+const showToolTypes = ref(false)
+const toolSearchQuery = ref('')
+const selectedTools = ref([])
+const tools = ref([])
+
+// 获取工具列表数据
+const fetchTools = async () => {
+  try {
+    const response = await getBuiltinTools()
+    tools.value = response.map(tool => ({
+      name: tool.label.zh_Hans,
+      description: tool.description.zh_Hans,
+      expanded: false,
+      subTools: tool.tools.map(subTool => ({
+        name: subTool.label.zh_Hans,
+        description: subTool.description.zh_Hans,
+        type: subTool.name,
+        parameters: subTool.parameters
+      }))
+    }))
+  } catch (error) {
+    console.error('获取工具列表失败:', error)
   }
-])
+}
 
 // 切换过滤器状态
 const toggleFilter = (filter) => {
@@ -833,22 +787,24 @@ const isToolAdded = (subTool) => {
 // 过滤工具列表
 const filteredTools = computed(() => {
   let result = tools.value
-
-  // 应用搜索过滤
+  
+  // 搜索过滤
   if (toolSearchQuery.value) {
+    const query = toolSearchQuery.value.toLowerCase()
     result = result.filter(tool => 
-      tool.name.toLowerCase().includes(toolSearchQuery.value.toLowerCase())
+      tool.name.toLowerCase().includes(query) ||
+      tool.subTools.some(subTool => subTool.name.toLowerCase().includes(query))
     )
   }
-
-  // 应用标签过滤
-  const activeFilters = filters.value.filter(f => f.active && f.value !== 'all').map(f => f.value)
-  if (activeFilters.length > 0) {
-    result = result.filter(tool => 
-      tool.category.some(cat => activeFilters.includes(cat))
+  
+  // 标签过滤
+  const activeFilters = filters.value.filter(f => f.active).map(f => f.value)
+  if (!activeFilters.includes('all')) {
+    result = result.filter(tool =>
+      tool.subTools.some(subTool => activeFilters.some(filter => subTool.labels?.includes(filter)))
     )
   }
-
+  
   return result
 })
 
@@ -961,8 +917,11 @@ const removeTool = (tool) => {
     selectedTools.value.splice(index, 1)
   }
 }
+// 生命周期钩子
+onMounted(() => {
+  fetchTools()
+})
 </script>
-
 <style scoped>
 .chat-assistant-layout {
   display: flex;
@@ -1831,4 +1790,4 @@ const removeTool = (tool) => {
     font-size: 12px;
   }
 }
-</style> 
+</style>
